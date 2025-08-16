@@ -1,0 +1,552 @@
+env:
+  dt: 0.0125
+  substeps: 1
+  use_aggregate: true
+  aggregate_type: env
+  action_period: 8
+  ig_ctrl: false
+  goal_type: pose
+  which_scene: single_object
+  num_env: 1024
+  collect_contact: never
+  object_state_type: pose6d_vel
+  hand_state_type: pose6d
+  reset_order: scene+robot
+  single_object_scene:
+    diverse_object: true
+    init_type: stable
+    goal_type: stable
+    randomize_init_pos: true
+    randomize_init_orn: true
+    randomize_yaw: true
+    randomize_barrier_height: true
+    num_object_types: 1024
+    use_dr_on_setup: true
+    use_dr: true
+    dr_period: 256
+    min_mass: 0.1
+    max_mass: 0.5
+    min_table_friction: 0.2
+    max_table_friction: 0.6
+    use_scale_dr: true
+    min_scale: 0.05
+    max_scale: 0.1
+    table_dims:
+    - 0.51
+    - 0.65
+    - 0.4
+    table_friction: 0.5
+    object_friction: 0.5
+    load_bbox: true
+    load_embedding: false
+    load_convex: false
+    load_cloud: true
+    load_foot_radius: true
+    override_inertia: true
+    filter_dims: null
+    filter_pose_count: null
+    base_set:
+    - dgn
+    dgn:
+      data_path: /input/DGN/meta-v8
+      pose_path: /input/DGN/meta-v8/unique_dgn_poses
+    filter_file: /input/DGN/yes.json
+    use_yaw_only_logic: true
+    gen:
+      base:
+        p_high: 0.707
+        recenter: true
+        min_height: 0.05
+        max_height: 0.15
+        base_thickness: 0.009
+        wall_thickness: 0.009
+        p_open_base: 0.5
+      case:
+        no_ceil: false
+        disable: false
+        min_wall_height: 0.05
+        max_wall_height: 0.3
+        thickness: 0.009
+    apply_guide_force: false
+    load_faces: false
+    case_thickness_offset: 0.4
+    use_table_height_dr: true
+    use_table_dim_dr: true
+    use_table_pos_dr: true
+    use_tight_ceil: true
+    high_bias: 10.0
+    z_eps: 0.02
+    tight_prior: 0.5
+    qrand_prior: 0.25
+    load_episode: /tmp/docker/eps-fr3-near-and-rand-1024x384.pth
+  franka:
+    ctrl_mode: jpos
+    target_type: rel
+    use_effort: true
+    max_pos: 0.06
+    max_ori: 0.1
+    KP_pos: 200
+    KD_pos: 17.32
+    KP_ori: 600.0
+    KD_ori: 48.98
+    KP_min: 10.0
+    KD_min: 0.3
+    KD_max: 2.0
+    clip_bound: true
+    track_object: true
+    obj_margin: 0.2
+    accumulate: false
+    lock_orn: false
+    crm_override: true
+    VISCOUS_FRICTION: 0.2
+    rot_type: axis_angle
+    base_height: table
+    init_type: ik-presample
+    regularize: energy
+    min_hand_friction: 1.0
+    max_hand_friction: 1.5
+    disable_table_collision: false
+    use_custom_hand: true
+    custom_hand_robot_file: franka_description/robots/franka_panda_custom_v3.urdf
+    custom_cloud_file: /input/robot/custom_v3_cloud.pkl
+    use_half_open_hand: false
+    use_open_hand: false
+    load_pcd: false
+    rel_clamp_joint_target:
+    - -0.9
+    - 0.9
+    ema_action: 0.8
+    joint_param_file: /tmp/docker/new_sysid.pkl
+  task:
+    timeout: 300
+    goal_radius: 0.05
+    goal_angle: 0.1
+    use_keypoint: true
+    crm_override: false
+    check_stable: false
+    max_speed: 0.1
+    contact_thresh: 0.0
+    use_pose_goal: true
+    goal_type: stable
+    planar: false
+    sample_thresh:
+    - 1.0
+    - 1.0
+    randomize_yaw: true
+    min_separation_scale: 0.0
+    avoid_direct_suc: true
+    margin_scale: 0.9
+    use_potential: true
+    fail_coef: 0.0
+    succ_coef: 1.0
+    pot_coef: 0.16
+    hand_obj_pot_coef: 0.03
+    time_coef: 0.0
+    rel_pot_rew_scale: 0.2
+    rewd_coef:
+      energy: 0.0
+    rewd_reduce_type: cat
+    feedback:
+      rewd_reduce_type: cat
+    epsilon: 0.02
+    regularize_coef: 0.0
+    sc_reward:
+      pot: false
+    use_log_reward: true
+    use_exp_reward: false
+    k_1: 0.15
+    k_2: 3.0
+    gamma: 1.0
+    soft_constraint: false
+  seed: 56381
+
+agent:
+  train:
+    train_steps: 2000000
+    rollout_size: 8
+    chunk_size: 1
+    use_early_stopping: true
+    use_amp: false
+    loss:
+      k_bound: 0.02
+      k_val: 2.0
+      normalize_val: false
+      clip_value: false
+      max_dv: 0.2
+    burn_in: 0
+    alr:
+      kl_target: 0.016
+    epoch: 8
+  accumulate_gradient: 1
+  tanh_xfm: false
+  bptt_horizon: 1
+  bptt_burn_in: 0
+  bptt_stride: 1
+  bootstrap_timeout: true
+
+net:
+  state:
+    feature:
+      state:
+        _target_: ham.models.rl.net.no_op.NoOpFeatNet.Config
+        dim_in: []
+        dim_hidden:
+        - 8
+        dim_out: 0
+        act_cls: tanh
+        use_bn: false
+      cube_state:
+        _target_: ham.models.rl.net.mlp.MLPFeatNet.Config
+        dim_in:
+        - 7
+        dim_hidden:
+        - 8
+        dim_out: 32
+        act_cls: tanh
+        use_bn: false
+      object_state:
+        _target_: ham.models.rl.net.no_op.NoOpFeatNet.Config
+        dim_in: []
+        dim_hidden:
+        - 8
+        dim_out: 0
+        act_cls: tanh
+        use_bn: false
+      goal:
+        _target_: ham.models.rl.net.no_op.NoOpFeatNet.Config
+        dim_in: []
+        dim_out: 0
+      eef_state:
+        _target_: ham.models.rl.net.no_op.NoOpFeatNet.Config
+        dim_in: []
+        dim_out: 0
+      robot_state:
+        _target_: ham.models.rl.net.no_op.NoOpFeatNet.Config
+        dim_in: []
+        dim_out: 0
+      hand_state:
+        _target_: ham.models.rl.net.no_op.NoOpFeatNet.Config
+        dim_in: []
+        dim_out: 0
+      previous_wrench:
+        _target_: ham.models.rl.net.no_op.NoOpFeatNet.Config
+        dim_in: []
+        dim_out: 0
+      goal_thresh:
+        _target_: ham.models.rl.net.no_op.NoOpFeatNet.Config
+        dim_in: []
+        dim_out: 0
+      object_mass:
+        _target_: ham.models.rl.net.no_op.NoOpFeatNet.Config
+        dim_in: []
+        dim_out: 0
+      phys_params:
+        _target_: ham.models.rl.net.no_op.NoOpFeatNet.Config
+        dim_in: []
+        dim_out: 0
+      object_embedding:
+        _target_: ham.models.rl.net.no_op.NoOpFeatNet.Config
+        dim_in: []
+        dim_out: 0
+      previous_action:
+        _target_: ham.models.rl.net.no_op.NoOpFeatNet.Config
+        dim_in: []
+        dim_out: 0
+      embed_cloud:
+        _target_: ham.models.rl.net.hypernet_modular.ModularHyperActionValueNet.Config
+        dim_in:
+        - 17
+        - 128
+        dim_out: 21
+        subnet:
+          _target_: ham.models.rl.net.hypernet_modular.ActionValueSubnet.Config
+          dim_in:
+          - 67
+          dim_out: 21
+          action_dim: 21
+          value_dim: 6
+          squeeze: true
+          log_std_init: -0.4
+          hidden:
+          - 256
+          - 128
+          - 128
+          - 64
+          act_cls: tanh
+          use_bn: false
+          use_ln: true
+          affine: false
+          output_ls: false
+        key_ctx:
+        - embed_cloud
+        - embed_focal_cloud
+        - embed_peripheral_cloud
+        - phys_params
+        - object_state
+        - goal
+        - previous_action
+        - hand_state
+        - robot_state
+        dim_ctx:
+        - 128
+        - 128
+        - 128
+        - 5
+        - 15
+        - 9
+        - 21
+        - 9
+        - 14
+        key_state:
+        - embed_cloud
+        - object_state
+        - goal
+        - previous_action
+        - hand_state
+        - robot_state
+        dim_state:
+        - 128
+        - 15
+        - 9
+        - 21
+        - 9
+        - 14
+        wnet_dims:
+        - 256
+        - 256
+        num_module: 8
+        cross_global: true
+        key_robot: robot_state
+        dim_robot: 14
+        num_head: 4
+        use_flash_attn: true
+        reduce_ctx:
+        - last
+        - cross
+        - cross
+        - none
+        - none
+        - none
+        - none
+        - none
+        - none
+        use_local_shape: true
+        scaling: true
+        scale_bias: true
+        fuse_scale: 1
+        cross_local: true
+        cross_big: true
+      embed_focal_cloud:
+        _target_: ham.models.rl.net.no_op.NoOpFeatNet.Config
+        dim_in: []
+        dim_out: 0
+      embed_peripheral_cloud:
+        _target_: ham.models.rl.net.no_op.NoOpFeatNet.Config
+        dim_in: []
+        dim_out: 0
+      abs_goal:
+        _target_: ham.models.rl.net.no_op.NoOpFeatNet.Config
+        dim_in: []
+        dim_out: 0
+    aggregator:
+      state:
+        _target_: ham.models.rl.net.no_op.NoOpAggNet.Config
+        dim_out: 0
+        dim_obs: []
+        dim_act: []
+      cube_state:
+        _target_: ham.models.rl.net.gru.GRUAggNet.Config
+        dim_out: 64
+      object_state:
+        _target_: ham.models.rl.net.no_op.NoOpAggNet.Config
+        dim_out: 0
+        dim_obs: []
+        dim_act: []
+      img:
+        _target_: ham.models.rl.net.gru.GRUAggNet.Config
+        dim_out: 64
+      goal:
+        _target_: ham.models.rl.net.no_op.NoOpAggNet.Config
+        dim_obs: []
+        dim_act: []
+        dim_out: 0
+      eef_state:
+        _target_: ham.models.rl.net.no_op.NoOpAggNet.Config
+        dim_obs: []
+        dim_act: []
+        dim_out: 0
+      robot_state:
+        _target_: ham.models.rl.net.no_op.NoOpAggNet.Config
+        dim_obs: []
+        dim_act: []
+        dim_out: 0
+      cloud:
+        _target_: ham.models.rl.net.no_op.NoOpAggNet.Config
+        dim_obs: []
+        dim_act: []
+        dim_out: 0
+      hand_state:
+        _target_: ham.models.rl.net.no_op.NoOpAggNet.Config
+        dim_obs: []
+        dim_act: []
+        dim_out: 0
+      goal_thresh:
+        _target_: ham.models.rl.net.no_op.NoOpAggNet.Config
+        dim_obs: []
+        dim_act: []
+        dim_out: 0
+      object_mass:
+        _target_: ham.models.rl.net.no_op.NoOpAggNet.Config
+        dim_obs: []
+        dim_act: []
+        dim_out: 0
+      phys_params:
+        _target_: ham.models.rl.net.no_op.NoOpAggNet.Config
+        dim_obs: []
+        dim_act: []
+        dim_out: 0
+      object_embedding:
+        _target_: ham.models.rl.net.no_op.NoOpAggNet.Config
+        dim_obs: []
+        dim_act: []
+        dim_out: 0
+      previous_action:
+        _target_: ham.models.rl.net.no_op.NoOpAggNet.Config
+        dim_obs: []
+        dim_act: []
+        dim_out: 0
+      embed_cloud:
+        _target_: ham.models.rl.net.no_op.NoOpAggNet.Config
+        dim_obs: []
+        dim_act: []
+        dim_out: 0
+      embed_focal_cloud:
+        _target_: ham.models.rl.net.no_op.NoOpAggNet.Config
+        dim_obs: []
+        dim_act: []
+        dim_out: 0
+      embed_peripheral_cloud:
+        _target_: ham.models.rl.net.no_op.NoOpAggNet.Config
+        dim_obs: []
+        dim_act: []
+        dim_out: 0
+      abs_goal:
+        _target_: ham.models.rl.net.no_op.NoOpAggNet.Config
+        dim_obs: []
+        dim_act: []
+        dim_out: 0
+    state:
+      _target_: ham.models.rl.net.no_op.NoOpAggNet.Config
+      dim_out: 0
+      dim_act: []
+      dim_hidden:
+      - 256
+      act_cls: elu
+      use_bn: false
+      use_ln: true
+      dim_obs: []
+    fuser:
+      _target_: ham.models.rl.net.no_op.CatFuser.Config
+      dim_out: 256
+      mlp:
+        _target_: ham.models.rl.net.mlp.MLPFeatNet.Config
+        act_cls: elu
+        dim_hidden:
+        - 512
+        dim_out: 256
+        use_bn: false
+        use_ln: true
+      keys:
+      - embed_cloud
+  policy:
+    actor:
+      dim_feat: -1
+      dim_hidden:
+      - 64
+      dim_act: []
+      log_std_init: 0.0
+      act_cls: elu
+      use_bn: false
+      use_ln: true
+    value:
+      dim_feat: -1
+      dim_hidden:
+      - 64
+      act_cls: elu
+      use_bn: false
+      bias: true
+      use_ln: true
+
+
+unicorn:
+  encoder:
+    model_dim: 128
+    patch_size: 128
+    num_layer: 4
+    group_type: fps
+    pos_enc_type: mlp
+    patch_type: mlp
+    encoder_type: xfm
+    num_patch_level: 4
+    pe_dim: 32
+  load_ckpt: yycho0108/pkm-obj:test-posemb-000000
+  load_cfg: null
+  scale_level: 2
+
+normalizer:
+  norm:
+    constlist:
+    - hand_state
+    - object_state
+    - phys_params
+    - abs_goal
+    - cloud
+    - focal_cloud
+    - peripheral_cloud
+    - hand_focal_cloud
+    - embed_cloud
+    - embed_focal_cloud
+    - embed_peripheral_cloud
+    - embed_hand_focal_cloud
+    - env_code
+
+state_net_blocklist:
+- cloud
+- focal_cloud
+- peripheral_cloud
+- hand_focal_cloud
+- abs_goal
+- embed_focal_cloud
+- embed_peripheral_cloud
+- embed_hand_focal_cloud
+
+
+path:
+  root: /tmp/ham/ppo
+machine: rss
+use_amp: false
+use_tune_domain_sampling: true
+tune_domain_sample:
+  decay_mode: mul
+add_object_full_cloud: true
+add_goal_full_cloud: false
+add_phys_params: true
+add_scene_full_cloud: true
+remove_state: false
+remove_cloud: 1
+scene_cloud:
+  crop_style: chamfer
+add_abs_goal: false
+hack_noop_policy: true
+use_rel_goal: true
+use_6d_rel_goal: true
+use_unicorn: true
+override_noop_policy_log_std: true
+split_noop_policy_log_std: false
+train_noop_policy_log_std: false
+global_device: cuda:0
+use_hfhub: true
+use_wandb: true
+tag: rss
+env_name: rss_env
+model_name: rss_net
