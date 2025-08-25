@@ -24,7 +24,7 @@ Refer to [Scripts](./ham/scripts/README.md)
 - [x] Release HAMNet Architecture
 - [x] Release environment and evaluation code
 - [x] Release training code
-- [ ] Release the Benchmark and evaluation pipeline (~Aug 24th)
+- [ ] Release the Benchmark and evaluation pipeline (~Aug)
 
 ## Citation
 
